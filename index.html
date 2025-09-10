@@ -74,7 +74,7 @@
                         </div>
                         <div class="md:col-span-2">
                             <label for="nome_cracha" class="block text-sm font-medium text-gray-700 mb-1">Nome para Crachá (até 2 nomes)</label>
-                            <input type="text" id="nome_cracha" name="Nome para Crachá" placeholder="Ex: Hermenegildo Silva" required class="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus-style focus:border-blue-500 sm:text-sm">
+                            <input type="text" id="nome_cracha" name="Nome para Crachá" placeholder="Ex: Pedro Pontes" required class="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus-style focus:border-blue-500 sm:text-sm">
                             <p id="cracha-error" class="text-red-500 text-xs mt-1 hidden">Por favor, insira no máximo dois nomes.</p>
                         </div>
                         <div>
@@ -233,10 +233,29 @@
             // Lógica para Nacionalidade
             nacionalidadeSelect.addEventListener('change', () => {
                 const isEstrangeira = nacionalidadeSelect.value === 'Estrangeira';
+
+                // Mostra/esconde o campo de país de origem
                 paisOrigemContainer.classList.toggle('hidden', !isEstrangeira);
                 paisOrigemInput.required = isEstrangeira;
-                if (!isEstrangeira) paisOrigemInput.value = ''; // Limpa o campo
-                checkFormValidity(); // Revalida o formulário, pois 'required' mudou
+
+                // Desativa/ativa e torna obrigatório/opcional os campos de estado e cidade
+                estadoSelect.disabled = isEstrangeira;
+                estadoSelect.required = !isEstrangeira;
+                cidadeSelect.disabled = isEstrangeira;
+                cidadeSelect.required = !isEstrangeira;
+
+                if (isEstrangeira) {
+                    // Se for estrangeiro, limpa e reseta os campos de estado/cidade
+                    estadoSelect.value = '';
+                    cidadeSelect.innerHTML = '<option value="">Não aplicável para estrangeiros</option>';
+                    cidadeSelect.value = '';
+                } else {
+                    // Se for brasileiro, limpa o país de origem e reseta a cidade
+                    paisOrigemInput.value = '';
+                    cidadeSelect.innerHTML = '<option value="">Selecione um estado primeiro</option>';
+                }
+
+                checkFormValidity(); // Revalida o formulário
             });
 
             // Lógica para Cargo
@@ -311,5 +330,4 @@
 
 </body>
 </html>
-
 
