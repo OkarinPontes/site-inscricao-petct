@@ -42,10 +42,9 @@
         <main class="bg-white rounded-xl shadow-md p-6 sm:p-8 md:p-10">
             <h2 class="text-2xl font-semibold text-center text-gray-800 mb-8">Formulário de Inscrição</h2>
             
-            <!-- O formulário não tem mais 'action' ou 'method', pois o JavaScript cuidará do envio -->
-            <form name="inscription-form" class="space-y-8">
+            <form action="https://formsubmit.co/treinamentopethuapuff@outlook.com" method="POST" class="space-y-8">
                 
-                <!-- Campos ocultos para o FormSubmit ainda são necessários -->
+                <!-- Configurações do FormSubmit -->
                 <input type="hidden" name="_subject" value="Nova Inscrição - Intensive Training in PET/CT">
                 <input type="hidden" name="_autoresponse" value="Agradecemos sua inscrição no Intensive Training in PET/CT for Cardiology and Oncology! Recebemos seus dados com sucesso. Em breve, enviaremos mais informações sobre o evento. Estamos ansiosos para recebê-lo! Atenciosamente, A Organização.">
 
@@ -136,12 +135,11 @@
                     </div>
                 </fieldset>
 
-                <!-- Botão de Envio e Mensagem de Status -->
+                <!-- Botão de Envio -->
                 <div class="text-center pt-4">
                     <button type="submit" disabled class="w-full sm:w-auto inline-flex justify-center py-3 px-8 border border-transparent shadow-sm text-base font-medium rounded-md text-white focus-style focus:ring-offset-2 transition-colors">
                         Realizar Inscrição
                     </button>
-                    <p id="form-message" class="text-sm mt-4"></p>
                 </div>
             </form>
 
@@ -155,9 +153,10 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const form = document.querySelector('form[name="inscription-form"]');
+            const form = document.querySelector('form');
             const submitButton = form.querySelector('button[type="submit"]');
             const allFields = Array.from(form.querySelectorAll('input, select'));
+
             const crachaInput = document.getElementById('nome_cracha');
             const crachaError = document.getElementById('cracha-error');
             const nacionalidadeSelect = document.getElementById('nacionalidade');
@@ -168,7 +167,6 @@
             const cargoSelect = document.getElementById('cargo');
             const cargoOutrosContainer = document.getElementById('cargo_outros_container');
             const cargoOutrosInput = document.getElementById('cargo_outros');
-            const formMessage = document.getElementById('form-message');
 
             const checkFormValidity = () => {
                 let isFormValid = true;
@@ -179,16 +177,19 @@
                         break;
                     }
                 }
+
                 const words = crachaInput.value.trim().split(/\s+/).filter(word => word.length > 0);
-                if (words.length > 2) { isFormValid = false; }
+                if (words.length > 2) {
+                    isFormValid = false;
+                }
                 
                 if (isFormValid) {
                     submitButton.disabled = false;
-                    submitButton.classList.remove('bg-gray-300');
+                    submitButton.classList.remove('bg-gray-300', 'cursor-not-allowed');
                     submitButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
                 } else {
                     submitButton.disabled = true;
-                    submitButton.classList.add('bg-gray-300');
+                    submitButton.classList.add('bg-gray-300', 'cursor-not-allowed');
                     submitButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
                 }
             };
@@ -197,18 +198,22 @@
                 field.addEventListener('input', checkFormValidity);
                 field.addEventListener('change', checkFormValidity);
             });
+
             crachaInput.addEventListener('input', () => {
                 const words = crachaInput.value.trim().split(/\s+/).filter(word => word.length > 0);
                 crachaError.classList.toggle('hidden', words.length <= 2);
             });
+
             nacionalidadeSelect.addEventListener('change', () => {
                 const isEstrangeira = nacionalidadeSelect.value === 'Estrangeira';
                 paisOrigemContainer.classList.toggle('hidden', !isEstrangeira);
                 paisOrigemInput.required = isEstrangeira;
+
                 estadoSelect.disabled = isEstrangeira;
                 estadoSelect.required = !isEstrangeira;
                 cidadeSelect.disabled = isEstrangeira;
                 cidadeSelect.required = !isEstrangeira;
+
                 if (isEstrangeira) {
                     estadoSelect.value = '';
                     cidadeSelect.innerHTML = '<option value="">Não aplicável</option>';
@@ -219,6 +224,7 @@
                 }
                 checkFormValidity();
             });
+
             cargoSelect.addEventListener('change', () => {
                 const isOutros = cargoSelect.value === 'Outros';
                 cargoOutrosContainer.classList.toggle('hidden', !isOutros);
@@ -226,73 +232,62 @@
                 if (!isOutros) cargoOutrosInput.value = '';
                 checkFormValidity();
             });
+
             fetch('https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome')
-                .then(response => response.json()).then(data => {
+                .then(response => response.json())
+                .then(data => {
                     estadoSelect.innerHTML = '<option value="">Selecione um estado</option>';
                     data.forEach(estado => {
                         const option = document.createElement('option');
-                        option.value = estado.sigla; option.textContent = estado.nome;
+                        option.value = estado.sigla;
+                        option.textContent = estado.nome;
                         estadoSelect.appendChild(option);
                     });
-                }).catch(error => { console.error('Erro ao buscar estados:', error); estadoSelect.innerHTML = '<option value="">Erro</option>'; });
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar estados:', error);
+                    estadoSelect.innerHTML = '<option value="">Erro ao carregar estados</option>';
+                });
+
             estadoSelect.addEventListener('change', () => {
                 const estadoUF = estadoSelect.value;
                 cidadeSelect.disabled = true;
-                cidadeSelect.innerHTML = '<option value="">Carregando...</option>';
-                if (!estadoUF) { cidadeSelect.innerHTML = '<option value="">Selecione um estado</option>'; checkFormValidity(); return; }
+                cidadeSelect.innerHTML = '<option value="">Carregando cidades...</option>';
+
+                if (!estadoUF) {
+                    cidadeSelect.innerHTML = '<option value="">Selecione um estado primeiro</option>';
+                    checkFormValidity();
+                    return;
+                }
+
                 fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${estadoUF}/municipios`)
-                    .then(response => response.json()).then(data => {
+                    .then(response => response.json())
+                    .then(data => {
                         cidadeSelect.innerHTML = '<option value="">Selecione uma cidade</option>';
                         data.forEach(cidade => {
                             const option = document.createElement('option');
-                            option.value = cidade.nome; option.textContent = cidade.nome;
+                            option.value = cidade.nome;
+                            option.textContent = cidade.nome;
                             cidadeSelect.appendChild(option);
                         });
                         cidadeSelect.disabled = false;
-                    }).catch(error => { console.error('Erro ao buscar cidades:', error); cidadeSelect.innerHTML = '<option value="">Erro</option>'; });
-            });
-            
-            checkFormValidity();
-
-            // --- NOVO SCRIPT DE SUBMISSÃO DUPLA ---
-            form.addEventListener('submit', (e) => {
-                e.preventDefault();
-
-                submitButton.disabled = true;
-                submitButton.textContent = 'Enviando...';
-                formMessage.textContent = '';
-                
-                const googleScriptURL = 'https://script.google.com/macros/s/AKfycby8J25GIE2KuZ84z73bwJ4j4VIg2RpI_HnNRXoxlb9u5kpIgGfCG43KHCd01pE09Maw/exec';
-                const formSubmitURL = 'https://formsubmit.co/treinamentopethuapuff@outlook.com';
-
-                const googleSheetPromise = fetch(googleScriptURL, { method: 'POST', body: new FormData(form) });
-                const formSubmitPromise = fetch(formSubmitURL, { method: 'POST', body: new FormData(form) });
-
-                Promise.all([googleSheetPromise, formSubmitPromise])
-                    .then(responses => {
-                        // Verificamos se ambas as respostas foram OK
-                        const allOk = responses.every(res => res.ok);
-                        if (allOk) {
-                            formMessage.textContent = 'Inscrição realizada com sucesso! Você receberá um e-mail de confirmação.';
-                            formMessage.className = 'text-sm mt-4 text-green-600';
-                            form.reset();
-                            // Dispara um evento para reavaliar a validação e desabilitar o botão
-                            document.getElementById('nacionalidade').dispatchEvent(new Event('change'));
-                        } else {
-                            throw new Error('Uma das submissões falhou.');
-                        }
                     })
                     .catch(error => {
-                        console.error('Erro no envio:', error.message);
-                        formMessage.textContent = 'Ocorreu um erro ao enviar sua inscrição. Tente novamente.';
-                        formMessage.className = 'text-sm mt-4 text-red-600';
-                    })
-                    .finally(() => {
-                        submitButton.textContent = 'Realizar Inscrição';
-                        // A função checkFormValidity chamada pelo reset/change cuidará do estado do botão
-                        checkFormValidity(); 
+                        console.error('Erro ao buscar cidades:', error);
+                        cidadeSelect.innerHTML = '<option value="">Erro ao carregar cidades</option>';
                     });
             });
+            
+            form.addEventListener('submit', (e) => {
+                const words = crachaInput.value.trim().split(/\s+/).filter(word => word.length > 0);
+                if (words.length > 2) {
+                    e.preventDefault();
+                    crachaError.classList.remove('hidden');
+                    crachaInput.focus();
+                }
+            });
+
+            checkFormValidity();
         });
     </script>
 
